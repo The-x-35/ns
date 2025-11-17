@@ -52,8 +52,8 @@ export default function ProfileDisplay({ profile }: ProfileDisplayProps) {
     if (socialRecords.length === 0) return null;
 
     return (
-      <div className="rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+      <div className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md p-6 shadow-lg">
+        <h2 className="mb-4 text-lg font-semibold text-white">
           Social Links
         </h2>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -64,11 +64,11 @@ export default function ProfileDisplay({ profile }: ProfileDisplayProps) {
             return (
               <div
                 key={key}
-                className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-700"
+                className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm p-3"
               >
                 <span className="text-2xl">{social.icon}</span>
                 <div className="min-w-0 flex-1">
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                  <div className="text-xs text-white/60">
                     {social.label}
                   </div>
                   {url ? (
@@ -76,12 +76,12 @@ export default function ProfileDisplay({ profile }: ProfileDisplayProps) {
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="truncate text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+                      className="truncate text-sm font-medium text-blue-300 hover:text-blue-200 hover:underline"
                     >
                       {value}
                     </a>
                   ) : (
-                    <div className="truncate text-sm font-medium text-gray-900 dark:text-white">
+                    <div className="truncate text-sm font-medium text-white">
                       {value}
                     </div>
                   )}
@@ -102,30 +102,30 @@ export default function ProfileDisplay({ profile }: ProfileDisplayProps) {
     if (textFields.length === 0) return null;
 
     return (
-      <div className="rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+      <div className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md p-6 shadow-lg">
+        <h2 className="mb-4 text-lg font-semibold text-white">
           Additional Information
         </h2>
         <div className="space-y-4">
           {textFields.map(([key, value]) => (
-            <div key={key} className="border-b border-gray-100 pb-3 last:border-0 dark:border-gray-700">
-              <div className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+            <div key={key} className="border-b border-white/10 pb-3 last:border-0">
+              <div className="text-xs font-medium uppercase tracking-wide text-white/60">
                 {TEXT_FIELD_LABELS[key] || key}
               </div>
-              <div className="mt-1 text-sm text-gray-900 dark:text-white">
+              <div className="mt-1 text-sm text-white">
                 {key === 'url' || key === 'website' ? (
                   <a
                     href={value.startsWith('http') ? value : `https://${value}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline dark:text-blue-400"
+                    className="text-blue-300 hover:text-blue-200 hover:underline"
                   >
                     {value}
                   </a>
                 ) : key === 'email' ? (
                   <a
                     href={`mailto:${value}`}
-                    className="text-blue-600 hover:underline dark:text-blue-400"
+                    className="text-blue-300 hover:text-blue-200 hover:underline"
                   >
                     {value}
                   </a>
@@ -146,20 +146,20 @@ export default function ProfileDisplay({ profile }: ProfileDisplayProps) {
       <div className="mb-6 flex items-center justify-between">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+          className="inline-flex items-center gap-2 text-sm text-white/80 hover:text-white"
         >
           ← Back to Search
         </Link>
         <Link
           href="/network"
-          className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+          className="inline-flex items-center gap-2 text-sm text-white/80 hover:text-white"
         >
           Network Graph →
         </Link>
       </div>
 
       {/* Profile Header */}
-      <div className="mb-8 rounded-xl bg-white p-8 shadow-lg dark:bg-gray-800">
+      <div className="mb-8 rounded-xl border border-white/20 bg-white/10 backdrop-blur-md p-8 shadow-lg">
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
           {/* Avatar */}
           <div className="shrink-0">
@@ -169,12 +169,12 @@ export default function ProfileDisplay({ profile }: ProfileDisplayProps) {
                 alt={`${profile.ensName} avatar`}
                 width={96}
                 height={96}
-                className="h-24 w-24 rounded-full border-4 border-blue-100 object-cover dark:border-blue-900"
+                className="h-24 w-24 rounded-full border-4 border-white/20 object-cover"
                 onError={() => setAvatarError(true)}
                 unoptimized
               />
             ) : (
-              <div className="flex h-24 w-24 items-center justify-center rounded-full border-4 border-blue-100 bg-linear-to-br from-blue-400 to-purple-500 text-4xl font-bold text-white dark:border-blue-900">
+              <div className="flex h-24 w-24 items-center justify-center rounded-full border-4 border-white/20 bg-green-500 text-4xl font-bold text-white">
                 {profile.ensName[0].toUpperCase()}
               </div>
             )}
@@ -182,25 +182,25 @@ export default function ProfileDisplay({ profile }: ProfileDisplayProps) {
 
           {/* Name and Address */}
           <div className="flex-1 text-center sm:text-left">
-            <h1 className="mb-2 text-3xl font-bold text-gray-900 dark:text-white">
+            <h1 className="mb-2 text-3xl font-bold text-white">
               {profile.ensName}
             </h1>
             
             {/* Primary Name Notice */}
             {profile.primaryName && profile.primaryName !== profile.ensName && (
-              <div className="mb-3 inline-block rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+              <div className="mb-3 inline-block rounded-full border border-white/20 bg-white/10 backdrop-blur-sm px-3 py-1 text-xs font-medium text-white">
                 Primary name: {profile.primaryName}
               </div>
             )}
 
             {/* Address */}
             <div className="flex items-center justify-center gap-2 sm:justify-start">
-              <div className="rounded-lg bg-gray-100 px-3 py-2 font-mono text-sm text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+              <div className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm px-3 py-2 font-mono text-sm text-white">
                 {formatAddress(profile.address)}
               </div>
               <button
                 onClick={copyAddress}
-                className="rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10"
               >
                 {copied ? '✓ Copied' : 'Copy'}
               </button>
@@ -208,10 +208,10 @@ export default function ProfileDisplay({ profile }: ProfileDisplayProps) {
 
             {/* Full Address (collapsed) */}
             <details className="mt-2">
-              <summary className="cursor-pointer text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+              <summary className="cursor-pointer text-xs text-white/60 hover:text-white/80">
                 Show full address
               </summary>
-              <div className="mt-2 break-all rounded-lg bg-gray-100 p-2 font-mono text-xs text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+              <div className="mt-2 break-all rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm p-2 font-mono text-xs text-white">
                 {profile.address}
               </div>
             </details>
@@ -227,8 +227,8 @@ export default function ProfileDisplay({ profile }: ProfileDisplayProps) {
 
       {/* No Data Message */}
       {Object.keys(profile.textRecords).length === 0 && (
-        <div className="rounded-xl bg-white p-8 text-center shadow-lg dark:bg-gray-800">
-          <p className="text-gray-600 dark:text-gray-400">
+        <div className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md p-8 text-center shadow-lg">
+          <p className="text-white/80">
             No additional profile information available for this ENS name.
           </p>
         </div>

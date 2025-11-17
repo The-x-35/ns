@@ -49,7 +49,7 @@ function ENSNode({ data }: { data: ENSNodeData }) {
             }}
           />
         ) : (
-          <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-blue-100 bg-linear-to-br from-blue-400 to-purple-500 text-xl font-bold text-white dark:border-blue-900">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-green-100 bg-green-500 text-xl font-bold text-white dark:border-green-900">
             {data.label[0].toUpperCase()}
           </div>
         )}
@@ -304,7 +304,7 @@ export default function NetworkGraphComponent({ graph, onRefresh }: NetworkGraph
   return (
     <>
       {/* Edit Mode Controls */}
-      <div className="mb-4 flex items-center justify-between rounded-lg bg-white p-4 shadow dark:bg-gray-800">
+      <div className="mb-4 flex items-center justify-between rounded-lg p-4 shadow">
         <div className="flex items-center gap-3">
           <button
             onClick={() => {
@@ -313,14 +313,14 @@ export default function NetworkGraphComponent({ graph, onRefresh }: NetworkGraph
             }}
             className={`rounded-lg px-4 py-2 font-semibold transition-colors ${
               editMode
-                ? 'bg-orange-500 text-white hover:bg-orange-600'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                ? 'bg-orange-500 hover:bg-orange-600'
+                : 'border'
             }`}
           >
             {editMode ? '✓ Edit Mode Active' : 'Enable Edit Mode'}
           </button>
           {editMode && (
-            <span className="text-sm text-gray-600 dark:text-gray-400">
+            <span className="text-sm text-white/80">
               {selectedNode ? 'Click another node to connect' : 'Click a node to start, or right-click to add connection'}
             </span>
           )}
@@ -328,7 +328,7 @@ export default function NetworkGraphComponent({ graph, onRefresh }: NetworkGraph
         {editMode && selectedNode && (
           <button
             onClick={() => setSelectedNode(null)}
-            className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+            className="text-sm text-white/80 hover:text-white"
           >
             Cancel
           </button>

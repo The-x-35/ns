@@ -1,6 +1,7 @@
 import { getENSProfile } from '@/lib/ens';
 import { notFound } from 'next/navigation';
 import ProfileDisplay from '@/app/profile/components/ProfileDisplay';
+import LiquidEtherWrapper from '@/app/profile/components/LiquidEtherWrapper';
 
 interface ProfilePageProps {
   params: Promise<{
@@ -21,9 +22,9 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-black dark:to-purple-950">
+    <LiquidEtherWrapper>
       <ProfileDisplay profile={profile} />
-    </div>
+    </LiquidEtherWrapper>
   );
 }
 

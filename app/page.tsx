@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import LiquidEther from '@/components/LiquidEther';
 
 export default function Home() {
   const [ensName, setEnsName] = useState('');
@@ -17,8 +18,16 @@ export default function Home() {
   const exampleNames = ['vitalik.eth', 'nick.eth', 'brantly.eth', 'balajis.eth'];
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-black dark:to-purple-950">
-      <main className="flex min-h-screen flex-col items-center justify-center px-6 py-24">
+    <div className="min-h-screen bg-black relative overflow-hidden">
+      {/* Liquid Ether Background */}
+      <div className="absolute inset-0 z-0">
+        <LiquidEther
+          colors={["#42d392", "#34c78e", "#2cb883", "#27a37b"]}
+          mouseForce={40}
+          cursorSize={150}
+        />
+      </div>
+      <main className="flex min-h-screen flex-col items-center justify-center px-6 py-24 relative z-10">
         <div className="w-full max-w-2xl space-y-8">
           {/* Header */}
           <div className="text-center space-y-4">
@@ -38,13 +47,13 @@ export default function Home() {
                 value={ensName}
                 onChange={(e) => setEnsName(e.target.value)}
                 placeholder="Enter ENS name (e.g., vitalik.eth)"
-                className="w-full rounded-xl border-2 border-gray-200 bg-white px-6 py-4 text-lg text-gray-900 placeholder-gray-400 transition-all focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500 dark:focus:border-blue-400"
+                className="w-full rounded-xl border-2 border-white/20 bg-white/10 backdrop-blur-md px-6 py-4 text-lg text-white placeholder-white/60 transition-all focus:border-white/40 focus:outline-none focus:ring-4 focus:ring-white/20 dark:border-white/20 dark:bg-white/10 dark:text-white dark:placeholder-white/60 dark:focus:border-white/40"
               />
             </div>
             <button
               type="submit"
               disabled={!ensName.trim()}
-              className="w-full rounded-xl bg-linear-to-r from-blue-600 to-purple-600 px-8 py-4 text-lg font-semibold text-white shadow-lg transition-all hover:from-blue-700 hover:to-purple-700 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:from-blue-600 disabled:hover:to-purple-600"
+              className="w-full rounded-xl bg-blue-600 px-8 py-4 text-lg font-semibold text-white shadow-lg transition-all hover:bg-blue-700 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-blue-600"
             >
               View Profile
             </button>
@@ -82,36 +91,6 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Features */}
-          <div className="mt-16 grid gap-6 sm:grid-cols-3">
-            <div className="rounded-lg bg-white/50 p-6 text-center backdrop-blur-sm dark:bg-gray-800/50">
-              <div className="mb-3 text-3xl">🔍</div>
-              <h3 className="mb-2 font-semibold text-gray-900 dark:text-white">
-                Search
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Look up any ENS name by searching or URL
-              </p>
-            </div>
-            <div className="rounded-lg bg-white/50 p-6 text-center backdrop-blur-sm dark:bg-gray-800/50">
-              <div className="mb-3 text-3xl">⛓️</div>
-              <h3 className="mb-2 font-semibold text-gray-900 dark:text-white">
-                On-Chain
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                All data fetched directly from Ethereum
-              </p>
-            </div>
-            <div className="rounded-lg bg-white/50 p-6 text-center backdrop-blur-sm dark:bg-gray-800/50">
-              <div className="mb-3 text-3xl">📋</div>
-              <h3 className="mb-2 font-semibold text-gray-900 dark:text-white">
-                Complete
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                View all populated profile fields
-          </p>
-        </div>
-          </div>
         </div>
       </main>
     </div>
