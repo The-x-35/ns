@@ -234,8 +234,8 @@ export default function NetworkGraphComponent({ graph, onRefresh }: NetworkGraph
           setSelectedNode(null);
         }
       } else {
-        // In normal mode, navigate to profile
-        router.push(`/profile/${node.data.label}`);
+        // In normal mode, open profile in new tab
+        window.open(`/profile/${node.data.label}`, '_blank');
       }
     },
     [editMode, selectedNode, router, handleAddConnection]
