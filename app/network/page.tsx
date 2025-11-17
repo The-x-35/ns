@@ -33,14 +33,15 @@ export default function NetworkPage() {
     }
   };
 
-  // Refresh graph data without losing input
+  // Refresh graph data without losing input - only updates friend relationships, doesn't re-analyze on-chain
   const refreshGraph = async () => {
-    if (!input.trim() || !graph) return;
+    if (!graph) return;
     
     try {
       setLoading(true);
-      const networkGraph = await buildNetworkGraph(input);
-      setGraph(networkGraph);
+      // Only update friend relationships, keep existing on-chain analysis
+      const updatedGraph = await updateFriendRelationships(graph);
+      setGraph(updatedGraph);
     } catch (err) {
       console.error('Failed to refresh graph:', err);
       setError(err instanceof Error ? err.message : 'Failed to refresh graph');

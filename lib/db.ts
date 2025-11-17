@@ -34,7 +34,7 @@ function getPool(): Pool {
 /**
  * Query helper function
  */
-export async function query(text: string, params?: any[]): Promise<QueryResult> {
+export async function query(text: string, params?: unknown[]): Promise<QueryResult> {
   const start = Date.now();
   try {
     const res = await getPool().query(text, params);
@@ -106,8 +106,8 @@ export async function addConnection(ensName1: string, ensName2: string): Promise
       [name1, name2]
     );
     return { id: result.rows[0].id };
-  } catch (error: any) {
-    if (error.code === '23505') {
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
       // Unique constraint violation
       throw new Error('Connection already exists');
     }

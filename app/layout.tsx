@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "ENS Profile Viewer",
   description: "Discover and visualize ENS profiles and social networks on the Ethereum blockchain",
+  openGraph: {
+    images: ['/og.jpeg'],
+  },
 };
 
 export default function RootLayout({
