@@ -7,6 +7,8 @@ export interface Connection {
   strength: number;
   details: string[];
   transfers?: TransferDetail[];
+  source: 'auto' | 'friend';
+  id?: number; // Database ID for friend relationships
 }
 
 export interface NetworkNode {
@@ -280,15 +282,18 @@ async function analyzeConnectionsBatch(
         );
         details.push(...onChainResult.details);
         
-        // Determine connection type based on what was ACTUALLY found
-        if (onChainResult.details.length > 0 && socialConnections.length > 0) {
-          connectionType = 'mutual';
-        } else if (onChainResult.details.length > 0) {
+        // Determine connection type - prioritize on-chain (most verifiable)
+        if (onChainResult.details.length > 0) {
           connectionType = 'onchain';
         } else if (socialConnections.length > 0 || mutualRefs.length > 0) {
           connectionType = 'social';
         } else {
           connectionType = 'none'; // No connections found
+        }
+        
+        // Skip if no connection found
+        if (connectionType === 'none') {
+          return null;
         }
         
         // Calculate connection strength
@@ -304,12 +309,13 @@ async function analyzeConnectionsBatch(
           to: name2.toLowerCase(),
           type: connectionType,
           strength: Math.max(strength, 0.2),
-          details: details.length > 0 ? details : ['Explicit pair - no additional connections found'],
+          details: details.length > 0 ? details : [],
           transfers: onChainResult.transfers.length > 0 ? onChainResult.transfers : undefined,
         };
       })
     );
     
+    // Filter out null results (no connections found)
     connections.push(...batchConnections.filter(c => c !== null) as Connection[]);
     
     // Small delay between batches
@@ -322,10 +328,37 @@ async function analyzeConnectionsBatch(
 }
 
 /**
+ * Fetch friend relationships from database
+ */
+export async function fetchFriendConnections(): Promise<Connection[]> {
+  try {
+    const response = await fetch('/api/connections');
+    if (!response.ok) {
+      throw new Error('Failed to fetch friend relationships');
+    }
+    const data = await response.json();
+    
+    return data.connections.map((conn: { id: number; ens_name_1: string; ens_name_2: string }) => ({
+      from: conn.ens_name_1.toLowerCase(),
+      to: conn.ens_name_2.toLowerCase(),
+      type: 'none' as const,
+      strength: 1.0,
+      details: ['Friend relationship'],
+      source: 'friend' as const,
+      id: conn.id,
+    }));
+  } catch (error) {
+    console.error('Error fetching friend relationships:', error);
+    return [];
+  }
+}
+
+/**
  * Build complete network graph from ENS names
  */
 export async function buildNetworkGraph(
-  pairsInput: string
+  pairsInput: string,
+  includeManualConnections: boolean = true
 ): Promise<NetworkGraph> {
   // Parse names and generate all pairs
   const pairs = parseENSPairs(pairsInput);
@@ -336,6 +369,22 @@ export async function buildNetworkGraph(
   
   // Get unique names
   const uniqueNames = getUniqueENSNames(pairs);
+  
+  // Fetch friend relationships if requested
+  let friendConnections: Connection[] = [];
+  if (includeManualConnections) {
+    friendConnections = await fetchFriendConnections();
+    
+    // Add ENS names from friend relationships to the list
+    friendConnections.forEach(conn => {
+      if (!uniqueNames.includes(conn.from)) {
+        uniqueNames.push(conn.from);
+      }
+      if (!uniqueNames.includes(conn.to)) {
+        uniqueNames.push(conn.to);
+      }
+    });
+  }
   
   // Fetch all profiles
   const profiles = await fetchAllProfiles(uniqueNames);
@@ -353,12 +402,44 @@ export async function buildNetworkGraph(
     profile,
   }));
   
-  // Analyze connections with batching
-  const connections = await analyzeConnectionsBatch(pairs, profiles);
+  // Analyze auto connections with batching
+  const autoConnections = await analyzeConnectionsBatch(pairs, profiles);
+  
+  // Mark auto connections as auto
+  autoConnections.forEach(conn => {
+    conn.source = 'auto';
+  });
+  
+  // Merge auto and friend connections
+  const allConnections = [...autoConnections, ...friendConnections];
   
   return {
     nodes,
-    connections,
+    connections: allConnections,
+  };
+}
+
+/**
+ * Update friend relationships in an existing graph without re-analyzing
+ * This is much faster than rebuilding the entire graph
+ */
+export async function updateFriendRelationships(
+  existingGraph: NetworkGraph
+): Promise<NetworkGraph> {
+  // Fetch updated friend relationships
+  const friendConnections = await fetchFriendConnections();
+  
+  // Filter out old friend relationships and keep auto connections
+  const autoConnections = existingGraph.connections.filter(
+    conn => conn.source === 'auto'
+  );
+  
+  // Merge auto connections with updated friend relationships
+  const allConnections = [...autoConnections, ...friendConnections];
+  
+  return {
+    nodes: existingGraph.nodes, // Keep existing nodes
+    connections: allConnections,
   };
 }
 

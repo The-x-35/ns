@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { buildNetworkGraph, NetworkGraph } from '@/lib/connections';
+import { buildNetworkGraph, updateFriendRelationships, NetworkGraph } from '@/lib/connections';
 import NetworkGraphComponent from './components/NetworkGraph';
 
 export default function NetworkPage() {
@@ -28,6 +28,22 @@ export default function NetworkPage() {
       setGraph(networkGraph);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to analyze network');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Refresh graph data without losing input
+  const refreshGraph = async () => {
+    if (!input.trim() || !graph) return;
+    
+    try {
+      setLoading(true);
+      const networkGraph = await buildNetworkGraph(input);
+      setGraph(networkGraph);
+    } catch (err) {
+      console.error('Failed to refresh graph:', err);
+      setError(err instanceof Error ? err.message : 'Failed to refresh graph');
     } finally {
       setLoading(false);
     }
@@ -174,24 +190,20 @@ export default function NetworkPage() {
             {/* Legend */}
             <div className="mb-4 flex flex-wrap gap-4 text-sm">
               <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-blue-500"></div>
-                <span className="text-gray-700 dark:text-gray-300">Social Connection</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-green-500"></div>
+                <div className="h-3 w-3 rounded-full border-2 border-dashed border-green-500 bg-transparent"></div>
                 <span className="text-gray-700 dark:text-gray-300">On-Chain Connection</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-purple-500"></div>
-                <span className="text-gray-700 dark:text-gray-300">Both</span>
+                <div className="h-3 w-3 rounded-full border-2 border-dashed border-blue-500 bg-transparent"></div>
+                <span className="text-gray-700 dark:text-gray-300">Social Connection</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-gray-400"></div>
-                <span className="text-gray-700 dark:text-gray-300">No Connection Found</span>
+                <div className="h-3 w-3 rounded-full border-2 border-dashed border-orange-500 bg-transparent"></div>
+                <span className="text-gray-700 dark:text-gray-300">Friend Relationship</span>
               </div>
             </div>
             
-            <NetworkGraphComponent graph={graph} />
+            <NetworkGraphComponent graph={graph} onRefresh={refreshGraph} />
           </div>
         )}
 

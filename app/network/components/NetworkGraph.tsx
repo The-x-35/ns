@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import ReactFlow, {
   Node,
@@ -15,9 +15,12 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { NetworkGraph, Connection } from '@/lib/connections';
+import ContextMenu from './ContextMenu';
+import Toast from './Toast';
 
 interface NetworkGraphProps {
   graph: NetworkGraph;
+  onRefresh?: () => Promise<void>;
 }
 
 // Custom node component with avatar
@@ -62,9 +65,19 @@ const nodeTypes = {
   ensNode: ENSNode,
 };
 
-export default function NetworkGraphComponent({ graph }: NetworkGraphProps) {
+export default function NetworkGraphComponent({ graph, onRefresh }: NetworkGraphProps) {
   const router = useRouter();
   const [selectedConnection, setSelectedConnection] = useState<Connection | null>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId: string } | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info'; isVisible: boolean }>({
+    message: '',
+    type: 'info',
+    isVisible: false,
+  });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [connectionToDelete, setConnectionToDelete] = useState<number | null>(null);
 
   // Convert network graph to ReactFlow format
   const initialNodes: Node[] = useMemo(() => {
@@ -86,23 +99,35 @@ export default function NetworkGraphComponent({ graph }: NetworkGraphProps) {
           avatar: node.avatar,
           address: node.address,
         },
+        style: selectedNode === node.id.toLowerCase() ? {
+          border: '3px solid #f97316',
+          boxShadow: '0 0 20px rgba(249, 115, 22, 0.5)',
+        } : undefined,
       };
       console.log('Created node:', reactNode.id);
       return reactNode;
     });
-  }, [graph.nodes]);
+  }, [graph.nodes, selectedNode]);
 
   const initialEdges: Edge[] = useMemo(() => {
     console.log('Creating edges from:', graph.connections);
     return graph.connections.map((conn, index) => {
-      // Determine edge color based on connection type
-      let color = '#3B82F6'; // blue for social
-      if (conn.type === 'onchain') {
-        color = '#10B981'; // green
-      } else if (conn.type === 'mutual') {
-        color = '#A855F7'; // purple
-      } else if (conn.type === 'none') {
-        color = '#9CA3AF'; // gray for no connection
+      // Determine edge color and style based on connection type and source
+      let color = '#9CA3AF'; // gray for none
+      let strokeWidth = 2;
+      let strokeDasharray = undefined;
+      
+      // If friend relationship, use orange and make it distinctive
+      if (conn.source === 'friend') {
+        color = '#F97316'; // orange
+        strokeWidth = 3;
+        strokeDasharray = '5 5'; // dashed line
+      } else if (conn.type === 'onchain') {
+        color = '#10B981'; // green (prioritize on-chain - most verifiable)
+        strokeWidth = 3;
+      } else if (conn.type === 'social') {
+        color = '#3B82F6'; // blue
+        strokeWidth = 2;
       }
 
       const edge = {
@@ -110,10 +135,11 @@ export default function NetworkGraphComponent({ graph }: NetworkGraphProps) {
         source: conn.from.toLowerCase(), // Ensure lowercase
         target: conn.to.toLowerCase(), // Ensure lowercase
         type: 'straight',
-        animated: conn.strength > 0.5,
+        animated: conn.source !== 'friend',
         style: {
           stroke: color,
-          strokeWidth: Math.max(2, conn.strength * 6),
+          strokeWidth,
+          strokeDasharray,
         },
         label: conn.details.join(', '),
         labelStyle: {
@@ -133,8 +159,14 @@ export default function NetworkGraphComponent({ graph }: NetworkGraphProps) {
     });
   }, [graph.connections]);
 
-  const [nodes, , onNodesChange] = useNodesState(initialNodes);
-  const [edges, , onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+  // Update nodes and edges when graph changes
+  useEffect(() => {
+    setNodes(initialNodes);
+    setEdges(initialEdges);
+  }, [initialNodes, initialEdges, setNodes, setEdges]);
 
   // Debug logging
   console.log('=== DEBUG INFO ===');
@@ -152,12 +184,108 @@ export default function NetworkGraphComponent({ graph }: NetworkGraphProps) {
     if (!targetExists) console.error(`Target node "${edge.target}" not found!`);
   });
 
-  // Handle node click - navigate to profile
+  // Show toast notification
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setToast({ message, type, isVisible: true });
+  }, []);
+
+  // Handle adding a connection
+  const handleAddConnection = useCallback(
+    async (sourceId: string, targetId: string) => {
+      try {
+        const response = await fetch('/api/connections', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ens_name_1: sourceId,
+            ens_name_2: targetId,
+          }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          showToast(error.error || 'Failed to add connection', 'error');
+          return;
+        }
+
+        // Refresh the graph data
+        showToast('Friend relationship added successfully!', 'success');
+        if (onRefresh) {
+          await onRefresh();
+        }
+      } catch (error) {
+        console.error('Error adding connection:', error);
+        showToast('Failed to add connection', 'error');
+      }
+    },
+    [onRefresh, showToast]
+  );
+
+  // Handle node click - navigate to profile or select for connection
   const onNodeClick = useCallback(
     (event: React.MouseEvent, node: Node) => {
-      router.push(`/profile/${node.data.label}`);
+      if (editMode) {
+        // In edit mode, select nodes to connect
+        if (!selectedNode) {
+          setSelectedNode(node.id);
+        } else if (selectedNode !== node.id) {
+          // Connect the two nodes
+          handleAddConnection(selectedNode, node.id);
+          setSelectedNode(null);
+        }
+      } else {
+        // In normal mode, navigate to profile
+        router.push(`/profile/${node.data.label}`);
+      }
     },
-    [router]
+    [editMode, selectedNode, router, handleAddConnection]
+  );
+
+  // Handle node right-click
+  const onNodeContextMenu = useCallback(
+    (event: React.MouseEvent, node: Node) => {
+      event.preventDefault();
+      if (editMode) {
+        setContextMenu({ x: event.clientX, y: event.clientY, nodeId: node.id });
+      }
+    },
+    [editMode]
+  );
+
+  // Handle delete confirmation
+  const handleDeleteClick = useCallback((connectionId: number) => {
+    setConnectionToDelete(connectionId);
+    setShowDeleteConfirm(true);
+  }, []);
+
+  // Handle deleting a connection
+  const handleDeleteConnection = useCallback(
+    async (connectionId: number) => {
+      try {
+        const response = await fetch(`/api/connections/${connectionId}`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          showToast(error.error || 'Failed to delete connection', 'error');
+          return;
+        }
+
+        // Close modal and refresh the graph
+        setSelectedConnection(null);
+        setShowDeleteConfirm(false);
+        setConnectionToDelete(null);
+        showToast('Friend relationship deleted successfully!', 'success');
+        if (onRefresh) {
+          await onRefresh();
+        }
+      } catch (error) {
+        console.error('Error deleting connection:', error);
+        showToast('Failed to delete connection', 'error');
+      }
+    },
+    [onRefresh, showToast]
   );
 
   // Handle edge click - show connection details
@@ -175,6 +303,38 @@ export default function NetworkGraphComponent({ graph }: NetworkGraphProps) {
 
   return (
     <>
+      {/* Edit Mode Controls */}
+      <div className="mb-4 flex items-center justify-between rounded-lg bg-white p-4 shadow dark:bg-gray-800">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              setEditMode(!editMode);
+              setSelectedNode(null);
+            }}
+            className={`rounded-lg px-4 py-2 font-semibold transition-colors ${
+              editMode
+                ? 'bg-orange-500 text-white hover:bg-orange-600'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+            }`}
+          >
+            {editMode ? '✓ Edit Mode Active' : 'Enable Edit Mode'}
+          </button>
+          {editMode && (
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              {selectedNode ? 'Click another node to connect' : 'Click a node to start, or right-click to add connection'}
+            </span>
+          )}
+        </div>
+        {editMode && selectedNode && (
+          <button
+            onClick={() => setSelectedNode(null)}
+            className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+          >
+            Cancel
+          </button>
+        )}
+      </div>
+
       <div className="h-[600px] w-full rounded-lg border-2 border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900">
         <ReactFlow
           nodes={nodes}
@@ -182,7 +342,12 @@ export default function NetworkGraphComponent({ graph }: NetworkGraphProps) {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onNodeClick={onNodeClick}
+          onNodeContextMenu={onNodeContextMenu}
           onEdgeClick={onEdgeClick}
+          onPaneClick={() => {
+            setContextMenu(null);
+            if (editMode) setSelectedNode(null);
+          }}
           nodeTypes={nodeTypes}
           fitView
           fitViewOptions={{ padding: 0.2 }}
@@ -201,6 +366,79 @@ export default function NetworkGraphComponent({ graph }: NetworkGraphProps) {
           />
         </ReactFlow>
       </div>
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setContextMenu(null)}
+          />
+          <ContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            nodeId={contextMenu.nodeId}
+            allNodes={graph.nodes.map(n => ({ id: n.id, ensName: n.ensName }))}
+            onAddConnection={(targetId) => {
+              handleAddConnection(contextMenu.nodeId, targetId);
+              setContextMenu(null);
+            }}
+            onClose={() => setContextMenu(null)}
+          />
+        </>
+      )}
+
+      {/* Toast Notification */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={() => setToast({ ...toast, isVisible: false })}
+      />
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+          onClick={() => {
+            setShowDeleteConfirm(false);
+            setConnectionToDelete(null);
+          }}
+        >
+          <div
+            className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl dark:bg-gray-800"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="mb-4 text-lg font-bold text-gray-900 dark:text-white">
+              Delete Friend Relationship?
+            </h3>
+            <p className="mb-6 text-gray-600 dark:text-gray-400">
+              Are you sure you want to delete this friend relationship? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setConnectionToDelete(null);
+                }}
+                className="flex-1 rounded-lg border-2 border-gray-300 bg-white px-4 py-2 font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (connectionToDelete) {
+                    handleDeleteConnection(connectionToDelete);
+                  }
+                }}
+                className="flex-1 rounded-lg bg-red-500 px-4 py-2 font-semibold text-white hover:bg-red-600"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Connection Details Modal */}
       {selectedConnection && (
@@ -222,13 +460,28 @@ export default function NetworkGraphComponent({ graph }: NetworkGraphProps) {
                   <span className="font-semibold">{selectedConnection.from}</span> ↔{' '}
                   <span className="font-semibold">{selectedConnection.to}</span>
                 </p>
+                {selectedConnection.source === 'friend' && (
+                  <span className="mt-2 inline-block rounded bg-orange-100 px-2 py-1 text-xs font-semibold text-orange-800 dark:bg-orange-900 dark:text-orange-200">
+                    Friend Relationship
+                  </span>
+                )}
               </div>
-              <button
-                onClick={() => setSelectedConnection(null)}
-                className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-              >
-                ✕
-              </button>
+              <div className="flex gap-2">
+                {selectedConnection.source === 'friend' && selectedConnection.id && (
+                  <button
+                    onClick={() => handleDeleteClick(selectedConnection.id!)}
+                    className="rounded-lg bg-red-500 px-3 py-2 text-sm font-semibold text-white hover:bg-red-600"
+                  >
+                    Delete
+                  </button>
+                )}
+                <button
+                  onClick={() => setSelectedConnection(null)}
+                  className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             {/* Connection Type Badge */}
@@ -237,20 +490,12 @@ export default function NetworkGraphComponent({ graph }: NetworkGraphProps) {
                 className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${
                   selectedConnection.type === 'onchain'
                     ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                    : selectedConnection.type === 'mutual'
-                    ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
-                    : selectedConnection.type === 'social'
-                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                    : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
                 }`}
               >
                 {selectedConnection.type === 'onchain'
                   ? 'On-Chain Connection'
-                  : selectedConnection.type === 'mutual'
-                  ? 'Social + On-Chain'
-                  : selectedConnection.type === 'social'
-                  ? 'Social Connection'
-                  : 'No Connection Found'}
+                  : 'Social Connection'}
               </span>
             </div>
 
