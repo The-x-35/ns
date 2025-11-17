@@ -76,20 +76,13 @@ export default function NetworkPage() {
           >
             ← Back to Home
           </Link>
-          <div className="flex items-center gap-3">
-            <img
-              src="/logo.svg"
-              alt="ENS Logo"
-              className="h-12 w-12"
-            />
-            <div>
-              <h1 className="text-4xl font-bold text-white">
-                ENS Network Graph
-              </h1>
-              <p className="mt-1 text-lg text-white/80">
-                Visualize social and on-chain connections between ENS names
-              </p>
-            </div>
+          <div>
+            <h1 className="text-4xl font-bold text-white">
+              ENS Network Graph
+            </h1>
+            <p className="mt-1 text-lg text-white/80">
+              Visualize social and on-chain connections between ENS names
+            </p>
           </div>
         </div>
 
