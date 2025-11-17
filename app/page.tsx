@@ -14,7 +14,7 @@ export default function Home() {
     }
   };
 
-  const exampleNames = ['vitalik.eth', 'nick.eth', 'brantly.eth'];
+  const exampleNames = ['vitalik.eth', 'nick.eth', 'brantly.eth', 'balajis.eth'];
 
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-black dark:to-purple-950">
@@ -68,6 +68,20 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Network Graph CTA */}
+          <div className="mt-12 text-center">
+            <button
+              onClick={() => router.push('/network')}
+              className="inline-flex items-center gap-2 rounded-xl border-2 border-blue-600 bg-white px-6 py-3 font-semibold text-blue-600 shadow-lg transition-all hover:bg-blue-50 dark:border-blue-400 dark:bg-gray-800 dark:text-blue-400 dark:hover:bg-gray-700"
+            >
+              <span className="text-xl">🕸️</span>
+              Explore Network Graph
+            </button>
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+              Visualize connections between ENS names
+            </p>
+          </div>
+
           {/* Features */}
           <div className="mt-16 grid gap-6 sm:grid-cols-3">
             <div className="rounded-lg bg-white/50 p-6 text-center backdrop-blur-sm dark:bg-gray-800/50">
@@ -95,8 +109,8 @@ export default function Home() {
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 View all populated profile fields
-              </p>
-            </div>
+          </p>
+        </div>
           </div>
         </div>
       </main>

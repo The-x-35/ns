@@ -142,13 +142,21 @@ export default function ProfileDisplay({ profile }: ProfileDisplayProps) {
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-12">
-      {/* Back Button */}
-      <Link
-        href="/"
-        className="mb-6 inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
-      >
-        ← Back to Search
-      </Link>
+      {/* Navigation */}
+      <div className="mb-6 flex items-center justify-between">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+        >
+          ← Back to Search
+        </Link>
+        <Link
+          href="/network"
+          className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+        >
+          Network Graph →
+        </Link>
+      </div>
 
       {/* Profile Header */}
       <div className="mb-8 rounded-xl bg-white p-8 shadow-lg dark:bg-gray-800">
